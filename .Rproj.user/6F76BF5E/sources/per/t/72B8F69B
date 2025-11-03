@@ -1,0 +1,27 @@
+{
+    "id": "72B8F69B",
+    "path": "~/Administrative/Training/productive-r-workflow/R/functions.R",
+    "project_path": "R/functions.R",
+    "type": "r_source",
+    "hash": "1587376630",
+    "contents": "",
+    "dirty": false,
+    "created": 1761062959445.0,
+    "source_on_save": true,
+    "relative_order": 2,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "58,0",
+        "scrollLine": "32"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1761948000,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1761948000668,
+    "read_only": false,
+    "read_only_alternatives": []
+}

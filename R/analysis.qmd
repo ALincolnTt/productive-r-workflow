@@ -1,0 +1,188 @@
+---
+title: "Exploring the Simpson's Paradox within the Penguin Dataset"
+subtitle: "And simultaneously demonstrating the capabilities of Quarto."
+description: "This document is a short analysis of the Penguin Dataset. It explores the relationship between bill length and bill depth and shows how important it is to consider group effects."
+
+author: "Ann Roseberry Lincoln"
+affiliation: "Tetra Tech"
+email: Ann.RoseberryLincoln@TetraTech.com
+
+keywords: "Quarto, Paradox, Data Analysis"
+date: today
+
+title-block-banner: "#f0f3f5"
+title-block-banner-color: "black"
+
+format: 
+  html:
+    css: style.css
+    toc: true
+    toc-depth: 3
+    toc-location: "left"
+    number-sections: true
+    code-fold: true
+    code-summary: "Show the code"
+editor: visual
+fig-cap-location: margin
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(
+  fig.width = 6, fig.height = 6, fig.align = 'center'
+)
+rendered_time <- Sys.time()
+```
+
+# Penguin Analysis
+
+In this project, I will be analyzing the penguin data set as part of the productive R workflow course by Yan Holtz. Data are sourced from this github repository [**here**](https://allisonhorst.github.io/palmerpenguins).
+
+## Loading and Cleaning the Data
+
+First, copy the dataset from the source to a folder called **input**. Next, convert the csv file to Microsoft **xlsx** format. The chunk of code below will use the package readxl to read the excel file using the function read_xlsx.
+
+```{r load-clean}
+
+# Read data
+data <- readxl::read_xlsx("../input/data.xlsx", na = "NA")
+
+#Remove incorrect data
+error_data <- dplyr::slice(data, c(23, 48))
+clean_data <- dplyr::slice(data, -c(23, 48))
+
+saveRDS(clean_data, file.path("../input/clean_data.rds"))
+
+```
+
+## Descriptive Analytics
+
+Our first step to explore the data will be to view the dataframe summary. From there, we'll calculate mean bill length, bill depth, flipper length, and body mass using the equation below. Lastly, we'll graph bill length versus bill depth using complete cases for each species observations on any island. Keep in mind that linear regressions are always expressed as **y vs. x**, since x is the independent variable (predictor) and y is the dependent variable (response). $$Avg = \frac{1}{n}\sum{a_{i}} = \frac{a_1 + a_2 + \dots + a_n}{n}$$
+
+```{r desc-analytics}
+
+# Source functions
+source("functions.R")
+
+# Read data
+data <- readRDS(file.path("../input/clean_data.rds"))
+
+# Create table with all the data
+DT::datatable(
+  data, 
+  caption = htmltools::tags$caption(
+    style = 'caption-side: top; text-align: left;',
+    htmltools::strong('Table 1: '), 
+    htmltools::em('The penguin LTER dataset in entirety.')
+  ),
+  class = 'stripe hover compact', 
+  filter = 'top'
+)
+
+# Calculate mean bill length for different species and islands
+data_means <- data |>
+  # dplyr::select(species, island, bill_length_mm) |>
+  # dplyr::filter(species == "Adelie" & island %in% c("Torgersen", "Biscoe", "Dream")) |>
+  dplyr::group_by(species, island) |>
+  dplyr::summarise(
+    mean_bill_length_mm = round(mean(bill_length_mm, na.rm = TRUE),
+      digits = 2
+    ),
+    mean_bill_depth = round(mean(bill_depth_mm, na.rm = TRUE),
+      digits = 2
+    ),
+    mean_flipper_length = round(mean(flipper_length_mm, na.rm = TRUE),
+      digits = 2
+    ),
+    mean_body_mass = round(mean(body_mass_g, na.rm = TRUE),
+      digits = 2
+    ),
+    .groups = "drop_last"
+  )
+knitr::kable(data_means, caption = "Penguin mean observations by species and island")
+
+```
+
+## Culmen (Bill) Depth and Length
+
+The image below shows where the bill depth and length are measured, while the table shows each species' mean bill dimensions and the scatterplots show observations of bill length (y) versus bill depth (x) for each species on each island.
+
+![Bill measurement explanation](assets/culmen_depth.png){fig-alt="An image showing a penguin head with arrows showing measurements for bill depth and length" fig-align="left" width="300"}
+
+```{r avg-dimensions}
+
+avg_bill_length <- data |>
+  dplyr::group_by(species) |>
+  dplyr::summarise(mean_bill_length_mm = round(mean(bill_length_mm, na.rm = TRUE),
+      digits = 2
+    ),
+    mean_bill_depth_mm = round(mean(bill_depth_mm, na.rm = TRUE),
+      digits = 2
+    ),
+    .groups = "drop_last")
+
+knitr::kable(avg_bill_length, caption = "Penguin bill dimensions")
+
+```
+
+```{r bill-dim-plots, warning=FALSE, fig.cap="There is generally a positive correlation when split by species. Adelie species show significantly more scatter around the linear regression line."}
+
+# Identify complete cases
+penguins_clean <- dplyr::filter(data, complete.cases(data))
+range_depth <- range(penguins_clean$bill_depth_mm)
+range_length <- range(penguins_clean$bill_length_mm)
+
+# Plot using function -- second exercise
+Adelie <- plot_depth_v_length_by_species(
+  data = penguins_clean,
+  selected_species = "Adelie",
+  color = "#0065BD",
+  xrange = range_length,
+  yrange = range_depth
+)
+p1 <- Adelie$p
+r2_Adelie <- Adelie$r2
+plotly::ggplotly(p1)
+
+Gentoo <- plot_depth_v_length_by_species(
+  data = penguins_clean,
+  selected_species = "Gentoo",
+  color = "#008542",
+  xrange = range_length,
+  yrange = range_depth
+)
+p2 <- Gentoo$p
+r2_Gentoo <- Gentoo$r2
+
+Chinstrap <- plot_depth_v_length_by_species(
+  data = penguins_clean,
+  selected_species = "Chinstrap",
+  color = "#6639B7",
+  xrange = range_length,
+  yrange = range_depth
+)
+p3 <- Chinstrap$p
+r2_Chinstrap <- Chinstrap$r2
+
+plots <- list(p1, p2, p3)
+
+patchwork::wrap_plots(plots, axes = 'collect_y', axis_titles = 'collect')
+
+```
+
+The correlation coefficients for each species of penguin are Adelie: `r r2_Adelie`; Gentoo: `r r2_Gentoo`; and Chinstrap: `r r2_Chinstrap`. These were estimated using base R's stats package (stats::cor) with method set to Pearson and using pairwise complete observations.
+
+::: callout-note
+Method options include Pearson, Kendall, and Spearman.
+:::
+
+# Citations
+
+```{r}
+
+citation("dplyr")
+citation("ggplot2")
+citation("patchwork")
+citation("knitr")
+citation("quarto")
+
+```

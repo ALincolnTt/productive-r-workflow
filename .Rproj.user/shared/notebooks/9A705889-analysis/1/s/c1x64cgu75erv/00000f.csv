@@ -1,0 +1,4 @@
+"0","knitr::opts_chunk$set("
+"0","  fig.width = 6, fig.height = 6, fig.align = 'center'"
+"0",")"
+"0","rendered_time <- Sys.time()"
